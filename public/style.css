@@ -123,6 +123,19 @@ button:hover {
   border: none;
 }
 
+#video-fallback {
+  display: block;
+  text-align: center;
+  color: var(--accent);
+  font-size: 0.9rem;
+  text-decoration: none;
+  margin-bottom: 16px;
+}
+
+#video-fallback:hover {
+  text-decoration: underline;
+}
+
 #lyrics-text {
   line-height: 2.2;
   background: #16172a;

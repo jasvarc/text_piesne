@@ -11,6 +11,7 @@ const retryBtn = document.getElementById('retry-btn');
 const resultSection = document.getElementById('result');
 
 const videoBox = document.getElementById('video-box');
+const videoFallback = document.getElementById('video-fallback');
 const lyricsMissing = document.getElementById('lyrics-missing');
 const gameProgress = document.getElementById('game-progress');
 const lyricsText = document.getElementById('lyrics-text');
@@ -227,7 +228,9 @@ async function findSong() {
       return;
     }
 
-    videoBox.innerHTML = `<iframe src="https://www.youtube.com/embed/${data.video.videoId}" allowfullscreen></iframe>`;
+    videoBox.innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${data.video.videoId}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`;
+    videoFallback.href = `https://www.youtube.com/watch?v=${data.video.videoId}`;
+    videoFallback.classList.remove('hidden');
 
     gameComplete.classList.add('hidden');
     if (data.lyrics) {
