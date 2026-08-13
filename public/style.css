@@ -124,27 +124,65 @@ button:hover {
 }
 
 #lyrics-text {
-  white-space: pre-wrap;
-  line-height: 1.6;
+  line-height: 2.2;
   background: #16172a;
   border-radius: 8px;
   padding: 16px;
   margin-bottom: 8px;
 }
 
-.blank {
-  display: inline-block;
-  min-width: 60px;
-  border-bottom: 2px solid var(--accent);
-  color: var(--accent);
-  font-weight: bold;
+#lyrics-text div {
+  min-height: 1.4em;
+}
+
+#game-progress {
   text-align: center;
+  color: var(--muted);
+  font-weight: bold;
+  margin-top: 0;
 }
 
-#game-feedback.correct {
+#game-complete {
+  text-align: center;
   color: var(--success);
+  font-weight: bold;
+  font-size: 1.1rem;
 }
 
-#game-feedback.incorrect {
-  color: var(--error);
+.blank-widget {
+  display: inline-flex;
+  gap: 6px;
+  margin: 2px 6px;
+  vertical-align: middle;
+}
+
+.choice-btn {
+  margin-top: 0;
+  padding: 4px 12px;
+  font-size: 0.95rem;
+  border-radius: 6px;
+  border: 2px solid var(--accent);
+  background: #20223a;
+  color: var(--text);
+}
+
+.choice-btn:hover:not(:disabled) {
+  background: var(--accent);
+}
+
+.choice-btn.wrong {
+  background: var(--error);
+  border-color: var(--error);
+  color: white;
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.blank-widget.solved .revealed {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 6px;
+  border-bottom: 3px solid var(--success);
+  color: var(--success);
+  font-weight: bold;
 }

@@ -12,78 +12,192 @@ const resultSection = document.getElementById('result');
 
 const videoBox = document.getElementById('video-box');
 const lyricsMissing = document.getElementById('lyrics-missing');
+const gameProgress = document.getElementById('game-progress');
 const lyricsText = document.getElementById('lyrics-text');
-const gameControls = document.getElementById('game-controls');
-const guessInput = document.getElementById('guess');
-const checkBtn = document.getElementById('check-btn');
-const gameFeedback = document.getElementById('game-feedback');
+const gameComplete = document.getElementById('game-complete');
 const newSongBtn = document.getElementById('new-song-btn');
 
-let currentAnswer = null;
+const FALLBACK_WORDS = [
+  'love', 'time', 'night', 'light', 'dream', 'heart', 'world', 'music',
+  'dance', 'story', 'smile', 'friend', 'forever', 'today', 'magic', 'stars',
+  'ocean', 'mountain', 'journey', 'laughter', 'sunshine', 'rainbow', 'freedom',
+  'courage', 'wonder', 'harmony', 'melody', 'whisper', 'thunder', 'breeze',
+];
 
-function showOnly(section) {
-  [searchSection, loadingSection, notFoundSection, resultSection].forEach((s) => {
-    s.classList.add('hidden');
-  });
-  section.classList.remove('hidden');
+let totalBlanks = 0;
+let solvedBlanks = 0;
+
+function updateProgress() {
+  gameProgress.textContent = `Vyriešené: ${solvedBlanks} / ${totalBlanks}`;
+  if (totalBlanks > 0 && solvedBlanks === totalBlanks) {
+    gameComplete.classList.remove('hidden');
+  } else {
+    gameComplete.classList.add('hidden');
+  }
 }
 
-function normalize(word) {
-  return word
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '');
+function wordMatches(a, b) {
+  return a.toLowerCase() === b.toLowerCase();
 }
 
-function pickBlankIndex(words) {
+function pickWordInLines(lines, minLen) {
   const candidates = [];
-  words.forEach((w, i) => {
-    const bare = w.replace(/[^\p{L}]/gu, '');
-    if (bare.length >= 4) candidates.push(i);
+  lines.forEach(({ lineIndex, text }) => {
+    const regex = /\p{L}+/gu;
+    let m;
+    while ((m = regex.exec(text)) !== null) {
+      if (m[0].length >= minLen) {
+        candidates.push({ lineIndex, start: m.index, end: m.index + m[0].length, word: m[0] });
+      }
+    }
   });
-  if (candidates.length === 0) return -1;
+  if (!candidates.length) return null;
   return candidates[Math.floor(Math.random() * candidates.length)];
 }
 
-function renderLyricsWithBlank(lyrics) {
-  const words = lyrics.split(/(\s+)/);
-  const wordIndexes = [];
-  words.forEach((w, i) => {
-    if (!/^\s+$/.test(w) && w.length > 0) wordIndexes.push(i);
-  });
-
-  const blankPos = pickBlankIndex(wordIndexes.map((i) => words[i]));
-  if (blankPos === -1) {
-    lyricsText.textContent = lyrics;
-    gameControls.classList.add('hidden');
-    lyricsMissing.textContent = 'V texte sa nenašlo vhodné slovo na vynechanie, ale môžeš si ho aspoň prečítať vyššie.';
-    lyricsMissing.classList.remove('hidden');
-    currentAnswer = null;
-    return;
-  }
-
-  const blankWordIndex = wordIndexes[blankPos];
-  const original = words[blankWordIndex];
-  const bare = original.replace(/[^\p{L}]/gu, '');
-  currentAnswer = bare;
-
-  lyricsText.innerHTML = '';
-  words.forEach((w, i) => {
-    if (i === blankWordIndex) {
-      const span = document.createElement('span');
-      span.className = 'blank';
-      span.textContent = '_____';
-      lyricsText.appendChild(span);
+function selectBlanks(lyrics) {
+  const rawLines = lyrics.split('\n');
+  const stanzas = [];
+  let current = [];
+  rawLines.forEach((line, idx) => {
+    if (line.trim() === '') {
+      if (current.length) {
+        stanzas.push(current);
+        current = [];
+      }
     } else {
-      lyricsText.appendChild(document.createTextNode(w));
+      current.push({ lineIndex: idx, text: line });
+    }
+  });
+  if (current.length) stanzas.push(current);
+
+  const blanks = [];
+  const usedLines = new Set();
+
+  stanzas.forEach((stanza) => {
+    let stanzaHasBlank = false;
+    for (let i = 0; i < stanza.length; i += 2) {
+      const group = stanza.slice(i, i + 2);
+      const picked = pickWordInLines(group, 4);
+      if (picked) {
+        blanks.push(picked);
+        usedLines.add(picked.lineIndex);
+        stanzaHasBlank = true;
+      }
+    }
+    if (!stanzaHasBlank && stanza.length) {
+      const picked = pickWordInLines(stanza, 3);
+      if (picked) {
+        blanks.push(picked);
+        usedLines.add(picked.lineIndex);
+      }
     }
   });
 
-  gameControls.classList.remove('hidden');
+  return { rawLines, blanks };
+}
+
+function buildDistractorPool(lyrics) {
+  const pool = new Set();
+  const regex = /\p{L}+/gu;
+  let m;
+  while ((m = regex.exec(lyrics)) !== null) {
+    if (m[0].length >= 4) pool.add(m[0]);
+  }
+  FALLBACK_WORDS.forEach((w) => pool.add(w));
+  return Array.from(pool);
+}
+
+function pickDistractors(pool, answer, count) {
+  const shuffled = pool
+    .filter((w) => !wordMatches(w, answer))
+    .sort(() => Math.random() - 0.5);
+  const picked = [];
+  const seen = new Set([answer.toLowerCase()]);
+  for (const w of shuffled) {
+    if (picked.length >= count) break;
+    if (seen.has(w.toLowerCase())) continue;
+    seen.add(w.toLowerCase());
+    picked.push(w);
+  }
+  return picked;
+}
+
+function makeBlankWidget(answer, distractors) {
+  const wrap = document.createElement('span');
+  wrap.className = 'blank-widget';
+
+  const choices = [answer, ...distractors].sort(() => Math.random() - 0.5);
+
+  choices.forEach((choiceWord) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'choice-btn';
+    btn.textContent = choiceWord;
+    btn.addEventListener('click', () => {
+      if (wrap.classList.contains('solved')) return;
+      if (wordMatches(choiceWord, answer)) {
+        wrap.classList.add('solved');
+        wrap.innerHTML = '';
+        const revealed = document.createElement('span');
+        revealed.className = 'revealed';
+        revealed.textContent = answer;
+        wrap.appendChild(revealed);
+        solvedBlanks += 1;
+        updateProgress();
+      } else {
+        btn.classList.add('wrong');
+        btn.disabled = true;
+      }
+    });
+    wrap.appendChild(btn);
+  });
+
+  return wrap;
+}
+
+function renderLyricsGame(lyrics) {
+  const { rawLines, blanks } = selectBlanks(lyrics);
+
+  if (!blanks.length) {
+    lyricsText.textContent = lyrics;
+    lyricsMissing.textContent = 'V texte sa nenašlo vhodné slovo na vynechanie, ale môžeš si ho aspoň prečítať vyššie.';
+    lyricsMissing.classList.remove('hidden');
+    gameProgress.classList.add('hidden');
+    totalBlanks = 0;
+    solvedBlanks = 0;
+    return;
+  }
+
+  const blanksByLine = new Map();
+  blanks.forEach((b) => blanksByLine.set(b.lineIndex, b));
+
+  const pool = buildDistractorPool(lyrics);
+
+  lyricsText.innerHTML = '';
+  rawLines.forEach((line, idx) => {
+    if (line.trim() === '') {
+      lyricsText.appendChild(document.createElement('br'));
+      return;
+    }
+    const lineDiv = document.createElement('div');
+    const blank = blanksByLine.get(idx);
+    if (blank) {
+      lineDiv.appendChild(document.createTextNode(line.slice(0, blank.start)));
+      const distractors = pickDistractors(pool, blank.word, 2);
+      lineDiv.appendChild(makeBlankWidget(blank.word, distractors));
+      lineDiv.appendChild(document.createTextNode(line.slice(blank.end)));
+    } else {
+      lineDiv.textContent = line;
+    }
+    lyricsText.appendChild(lineDiv);
+  });
+
+  totalBlanks = blanks.length;
+  solvedBlanks = 0;
   lyricsMissing.classList.add('hidden');
-  guessInput.value = '';
-  gameFeedback.textContent = '';
-  gameFeedback.className = '';
+  gameProgress.classList.remove('hidden');
+  updateProgress();
 }
 
 async function findSong() {
@@ -115,14 +229,16 @@ async function findSong() {
 
     videoBox.innerHTML = `<iframe src="https://www.youtube.com/embed/${data.video.videoId}" allowfullscreen></iframe>`;
 
+    gameComplete.classList.add('hidden');
     if (data.lyrics) {
-      renderLyricsWithBlank(data.lyrics);
+      renderLyricsGame(data.lyrics);
     } else {
       lyricsText.textContent = '';
-      gameControls.classList.add('hidden');
+      gameProgress.classList.add('hidden');
       lyricsMissing.textContent = 'Text tejto piesne sa nepodarilo nájsť (appka zatiaľ podporuje len anglické piesne), ale video si môžeš vypočuť vyššie.';
       lyricsMissing.classList.remove('hidden');
-      currentAnswer = null;
+      totalBlanks = 0;
+      solvedBlanks = 0;
     }
 
     showOnly(resultSection);
@@ -130,6 +246,13 @@ async function findSong() {
     notFoundMsg.textContent = 'Nastala chyba pri hľadaní piesne. Skús to znova.';
     showOnly(notFoundSection);
   }
+}
+
+function showOnly(section) {
+  [searchSection, loadingSection, notFoundSection, resultSection].forEach((s) => {
+    s.classList.add('hidden');
+  });
+  section.classList.remove('hidden');
 }
 
 findBtn.addEventListener('click', findSong);
@@ -148,25 +271,6 @@ newSongBtn.addEventListener('click', () => {
   titleInput.value = '';
   showOnly(searchSection);
   artistInput.focus();
-});
-
-checkBtn.addEventListener('click', () => {
-  if (!currentAnswer) return;
-  const guess = normalize(guessInput.value.trim());
-  const answer = normalize(currentAnswer);
-  if (guess && guess === answer) {
-    gameFeedback.textContent = '✅ Správne!';
-    gameFeedback.className = 'correct';
-    const blank = lyricsText.querySelector('.blank');
-    if (blank) blank.textContent = currentAnswer;
-  } else {
-    gameFeedback.textContent = '❌ Skús to znova.';
-    gameFeedback.className = 'incorrect';
-  }
-});
-
-guessInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') checkBtn.click();
 });
 
 artistInput.focus();
