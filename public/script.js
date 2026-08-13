@@ -214,7 +214,7 @@ async function findSong() {
   showOnly(loadingSection);
 
   try {
-    const res = await fetch('/api/find', {
+    const res = await fetch('api/find', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ artist, title }),
