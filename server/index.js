@@ -10,20 +10,18 @@ const HOST = process.env.HOST || '127.0.0.1';
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
-async function findVideo(artist, title) {
+async function findVideos(artist, title, limit) {
   const query = [artist, title].filter(Boolean).join(' ');
-  if (!query) return null;
+  if (!query) return [];
   const result = await yts(query);
   const count = result && result.videos ? result.videos.length : 0;
   console.log(`[youtube] dopyt "${query}" -> ${count} výsledkov`);
-  const video = result.videos && result.videos[0];
-  if (!video) return null;
-  return {
+  return (result.videos || []).slice(0, limit).map((video) => ({
     videoId: video.videoId,
     title: video.title,
     author: video.author && video.author.name,
     thumbnail: video.thumbnail,
-  };
+  }));
 }
 
 async function findLyrics(artist, title) {
@@ -54,19 +52,19 @@ app.post('/api/find', async (req, res) => {
   }
 
   try {
-    let video = null;
+    let videos = [];
     try {
-      video = await findVideo(artist, title);
+      videos = await findVideos(artist, title, 5);
     } catch (err) {
       console.error(`[find] YouTube search zlyhal pre "${artist} ${title}":`, err && err.stack ? err.stack : err);
     }
 
-    const lyricsArtist = artist || (video && video.author) || '';
+    const lyricsArtist = artist || (videos[0] && videos[0].author) || '';
     const lyrics = await findLyrics(lyricsArtist, title);
 
-    console.log(`[find] výsledok: video=${video ? `ÁNO (${video.videoId})` : 'NIE'} lyrics=${lyrics ? 'ÁNO' : 'NIE'}`);
+    console.log(`[find] výsledok: videos=${videos.length}${videos.length ? ' (' + videos.map((v) => v.videoId).join(', ') + ')' : ''} lyrics=${lyrics ? 'ÁNO' : 'NIE'}`);
 
-    res.json({ video, lyrics });
+    res.json({ videos, lyrics });
   } catch (err) {
     console.error('[find] neočakávaná chyba:', err && err.stack ? err.stack : err);
     res.status(500).json({ error: 'Interná chyba servera.' });

@@ -136,6 +136,27 @@ button:hover {
   text-decoration: underline;
 }
 
+.debug-title {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+#debug-log {
+  max-height: 220px;
+  overflow-y: auto;
+  background: #0e0f1c;
+  color: #9fd88c;
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  padding: 12px;
+  border-radius: 8px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 0;
+}
+
 #lyrics-text {
   line-height: 2.2;
   background: #16172a;

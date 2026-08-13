@@ -18,6 +18,97 @@ const lyricsText = document.getElementById('lyrics-text');
 const gameComplete = document.getElementById('game-complete');
 const newSongBtn = document.getElementById('new-song-btn');
 
+const debugSection = document.getElementById('debug-section');
+const debugLogEl = document.getElementById('debug-log');
+
+function debugLog(msg) {
+  const time = new Date().toLocaleTimeString('sk-SK');
+  debugLogEl.textContent += `[${time}] ${msg}\n`;
+  debugSection.classList.remove('hidden');
+  debugLogEl.scrollTop = debugLogEl.scrollHeight;
+}
+
+function debugReset() {
+  debugLogEl.textContent = '';
+  debugSection.classList.remove('hidden');
+}
+
+const YT_ERROR_MESSAGES = {
+  2: 'neplatné video ID (chyba appky)',
+  5: 'chyba HTML5 prehrávača',
+  100: 'video nenájdené / súkromné / zmazané',
+  101: 'vlastník videa zakázal embedovanie na iných stránkach',
+  150: 'vlastník videa zakázal embedovanie na iných stránkach',
+};
+
+let ytApiPromise = null;
+function loadYouTubeAPI() {
+  if (ytApiPromise) return ytApiPromise;
+  ytApiPromise = new Promise((resolve, reject) => {
+    if (window.YT && window.YT.Player) {
+      resolve();
+      return;
+    }
+    const timeout = setTimeout(() => {
+      reject(new Error('YouTube IFrame API sa nenačítalo do 6s (možno blokované rozšírením prehliadača)'));
+    }, 6000);
+    const previous = window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady = () => {
+      clearTimeout(timeout);
+      if (previous) previous();
+      resolve();
+    };
+    const tag = document.createElement('script');
+    tag.src = 'https://www.youtube.com/iframe_api';
+    tag.onerror = () => {
+      clearTimeout(timeout);
+      reject(new Error('Skript https://www.youtube.com/iframe_api sa nepodarilo načítať (sieť/blokovanie)'));
+    };
+    document.head.appendChild(tag);
+  });
+  return ytApiPromise;
+}
+
+let videoCandidates = [];
+let ytPlayer = null;
+
+async function tryPlayVideo(index) {
+  if (index >= videoCandidates.length) {
+    debugLog(`Žiadne z ${videoCandidates.length} videí sa nepodarilo embedovať. Použi odkaz "otvoriť na YouTube" nižšie.`);
+    videoBox.innerHTML = '';
+    return;
+  }
+
+  const video = videoCandidates[index];
+  debugLog(`Skúšam embed videa ${index + 1}/${videoCandidates.length}: ${video.videoId} ("${video.title}")`);
+
+  try {
+    await loadYouTubeAPI();
+  } catch (err) {
+    debugLog(`Chyba YouTube API: ${err.message}`);
+    videoBox.innerHTML = '';
+    return;
+  }
+
+  videoBox.innerHTML = '<div id="yt-player-target"></div>';
+
+  ytPlayer = new YT.Player('yt-player-target', {
+    videoId: video.videoId,
+    width: '100%',
+    height: '100%',
+    host: 'https://www.youtube-nocookie.com',
+    playerVars: { rel: 0 },
+    events: {
+      onReady: () => debugLog(`Video ${video.videoId} sa úspešne načítalo.`),
+      onError: (e) => {
+        const reason = YT_ERROR_MESSAGES[e.data] || `neznáma chyba (kód ${e.data})`;
+        debugLog(`Video ${video.videoId} zlyhalo: ${reason} [kód ${e.data}]`);
+        tryPlayVideo(index + 1);
+      },
+    },
+  });
+}
+
 const FALLBACK_WORDS = [
   'love', 'time', 'night', 'light', 'dream', 'heart', 'world', 'music',
   'dance', 'story', 'smile', 'friend', 'forever', 'today', 'magic', 'stars',
@@ -213,6 +304,8 @@ async function findSong() {
   }
 
   showOnly(loadingSection);
+  debugReset();
+  debugLog(`Hľadám: interpret="${artist}" názov="${title}"`);
 
   try {
     const res = await fetch('api/find', {
@@ -220,17 +313,21 @@ async function findSong() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ artist, title }),
     });
+    debugLog(`Server odpovedal: HTTP ${res.status}`);
     const data = await res.json();
+    const videos = data.videos || [];
+    debugLog(`Nájdených YouTube výsledkov: ${videos.length}${videos.length ? ' (' + videos.map((v) => v.videoId).join(', ') + ')' : ''}, text piesne: ${data.lyrics ? 'áno' : 'nie'}`);
 
-    if (!data.video) {
+    if (!videos.length) {
       notFoundMsg.textContent = 'Túto pieseň sa nepodarilo nájsť na YouTube. Skontroluj názov/interpreta a skús to znova.';
       showOnly(notFoundSection);
       return;
     }
 
-    videoBox.innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${data.video.videoId}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`;
-    videoFallback.href = `https://www.youtube.com/watch?v=${data.video.videoId}`;
+    videoCandidates = videos;
+    videoFallback.href = `https://www.youtube.com/watch?v=${videos[0].videoId}`;
     videoFallback.classList.remove('hidden');
+    tryPlayVideo(0);
 
     gameComplete.classList.add('hidden');
     if (data.lyrics) {
@@ -246,6 +343,7 @@ async function findSong() {
 
     showOnly(resultSection);
   } catch (err) {
+    debugLog(`Chyba pri fetch/spracovaní: ${err.message}`);
     notFoundMsg.textContent = 'Nastala chyba pri hľadaní piesne. Skús to znova.';
     showOnly(notFoundSection);
   }
