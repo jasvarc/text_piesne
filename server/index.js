@@ -5,6 +5,7 @@ const axios = require('axios');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+const HOST = process.env.HOST || '127.0.0.1';
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '..', 'public')));
@@ -61,6 +62,6 @@ app.post('/api/find', async (req, res) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`text_piesne beží na http://localhost:${PORT}`);
+app.listen(PORT, HOST, () => {
+  console.log(`text_piesne beží na http://${HOST}:${PORT} (iba lokálne, verejne je dostupná cez Apache reverse proxy)`);
 });
