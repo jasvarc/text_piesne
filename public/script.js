@@ -56,6 +56,7 @@ function renderLyricsWithBlank(lyrics) {
   if (blankPos === -1) {
     lyricsText.textContent = lyrics;
     gameControls.classList.add('hidden');
+    lyricsMissing.textContent = 'V texte sa nenašlo vhodné slovo na vynechanie, ale môžeš si ho aspoň prečítať vyššie.';
     lyricsMissing.classList.remove('hidden');
     currentAnswer = null;
     return;
@@ -119,6 +120,7 @@ async function findSong() {
     } else {
       lyricsText.textContent = '';
       gameControls.classList.add('hidden');
+      lyricsMissing.textContent = 'Text tejto piesne sa nepodarilo nájsť (appka zatiaľ podporuje len anglické piesne), ale video si môžeš vypočuť vyššie.';
       lyricsMissing.classList.remove('hidden');
       currentAnswer = null;
     }

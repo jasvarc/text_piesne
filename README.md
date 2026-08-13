@@ -17,6 +17,11 @@ DONE:
   slovenskych/menej znamych pesnickach), appka to oznaci a aspon ponuka video na
   vypocutie, bez dopĺňacej hry
 - tlacidlo "Nova pieseň" vycisti formular a vrati na zaciatok
+- appka je vedome zamerana len na anglicke piesne (UI to hovori uz vo formulari aj
+  v hlaske pri nenajdenom texte) - zvazovali sme scraping slovenskych/ceskych
+  lyric webov (karaoketexty.cz, supermusic.cz) ako zdroj pre SK/CZ piesne, ale
+  ich vlastne podmienky pouzitia/copyright poznamky explicitne priznavaju, ze
+  nemaju prava obsah dalej sirit, takze sme sa rozhodli to nerobit
 
 TODO:
 1. presnejsie parovanie YouTube vysledku s hladanou pesnickou (yt-search niekedy
