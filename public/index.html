@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Text piesne - doplň slovo</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="wrap">
+    <h1>🎵 Text piesne</h1>
+    <p class="subtitle">Nájdi pieseň a doplň chýbajúce slovo v texte.</p>
+
+    <section id="search-section" class="card">
+      <label for="artist">Interpret</label>
+      <input id="artist" type="text" placeholder="napr. Elán" autocomplete="off">
+
+      <label for="title">Názov piesne</label>
+      <input id="title" type="text" placeholder="napr. Zradca" autocomplete="off">
+
+      <button id="find-btn">Nájsť pieseň</button>
+      <p id="search-error" class="error hidden"></p>
+    </section>
+
+    <section id="loading" class="card hidden">
+      <p>⏳ Hľadám pieseň...</p>
+    </section>
+
+    <section id="not-found" class="card hidden">
+      <p id="not-found-msg"></p>
+      <button id="retry-btn">Skúsiť znova</button>
+    </section>
+
+    <section id="result" class="card hidden">
+      <div id="video-box"></div>
+
+      <div id="lyrics-game">
+        <p id="lyrics-missing" class="hidden">Text tejto piesne sa nepodarilo nájsť, ale video si môžeš vypočuť vyššie.</p>
+        <div id="lyrics-text"></div>
+        <div id="game-controls" class="hidden">
+          <input id="guess" type="text" placeholder="Doplň chýbajúce slovo" autocomplete="off">
+          <button id="check-btn">Skontrolovať</button>
+          <p id="game-feedback"></p>
+        </div>
+      </div>
+
+      <button id="new-song-btn">Nová pieseň</button>
+    </section>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
