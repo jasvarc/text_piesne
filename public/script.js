@@ -80,7 +80,7 @@ async function tryPlayVideo(index) {
   }
 
   const video = videoCandidates[index];
-  debugLog(`Skúšam embed videa ${index + 1}/${videoCandidates.length}: ${video.videoId} ("${video.title}")`);
+  debugLog(`Skúšam embed videa ${index + 1}/${videoCandidates.length}: ${video.videoId} ("${video.title}"), origin=${window.location.origin}`);
 
   try {
     await loadYouTubeAPI();
@@ -97,7 +97,7 @@ async function tryPlayVideo(index) {
     width: '100%',
     height: '100%',
     host: 'https://www.youtube-nocookie.com',
-    playerVars: { rel: 0 },
+    playerVars: { rel: 0, origin: window.location.origin },
     events: {
       onReady: () => debugLog(`Video ${video.videoId} sa úspešne načítalo.`),
       onError: (e) => {
