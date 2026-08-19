@@ -258,14 +258,23 @@ async function loadHints(blankWidgets, songContext) {
   const uniqueWords = Array.from(new Set(blankWidgets.map((b) => b.word)));
   if (!uniqueWords.length) return;
 
+  debugLog(`Žiadam preklad hintov pre ${uniqueWords.length} slov (kontext="${songContext}")...`);
+
   try {
     const res = await fetch('api/translate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ words: uniqueWords, context: songContext }),
     });
+    debugLog(`Preklad hintov: server odpovedal HTTP ${res.status}`);
     const data = await res.json();
     const translations = data.translations || {};
+    const translatedCount = Object.keys(translations).length;
+
+    if (data.error) {
+      debugLog(`Preklad hintov: server vrátil chybu: ${data.error}`);
+    }
+    debugLog(`Preklad hintov: dostal som ${translatedCount} / ${uniqueWords.length} prekladov (${Object.entries(translations).map(([w, t]) => `${w}=${t}`).join(', ') || 'žiadne'})`);
 
     blankWidgets.forEach(({ word, hintEl }) => {
       const t = translations[word];
@@ -275,7 +284,7 @@ async function loadHints(blankWidgets, songContext) {
       }
     });
   } catch (err) {
-    // hra funguje aj bez hintov, tichy fallback
+    debugLog(`Preklad hintov zlyhal: ${err.message}`);
   }
 }
 
