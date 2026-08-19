@@ -1,14 +1,23 @@
+require('dotenv').config();
+
 const path = require('path');
 const express = require('express');
 const yts = require('yt-search');
 const axios = require('axios');
+const { translateWords } = require('./claude');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 const HOST = process.env.HOST || '127.0.0.1';
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname, '..', 'public')));
+app.use(express.static(path.join(__dirname, '..', 'public'), {
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.js') || filePath.endsWith('.css') || filePath.endsWith('.html')) {
+      res.setHeader('Cache-Control', 'no-cache');
+    }
+  },
+}));
 
 async function findVideos(artist, title, limit) {
   const query = [artist, title].filter(Boolean).join(' ');
@@ -68,6 +77,29 @@ app.post('/api/find', async (req, res) => {
   } catch (err) {
     console.error('[find] neočakávaná chyba:', err && err.stack ? err.stack : err);
     res.status(500).json({ error: 'Interná chyba servera.' });
+  }
+});
+
+app.post('/api/translate', async (req, res) => {
+  const words = Array.isArray(req.body.words) ? req.body.words.filter((w) => typeof w === 'string').slice(0, 60) : [];
+  const context = (req.body.context || '').trim();
+
+  if (!words.length) {
+    return res.json({ translations: {} });
+  }
+
+  if (!process.env.ANTHROPIC_API_KEY) {
+    console.warn('[translate] ANTHROPIC_API_KEY nie je nastavený, preklad hintov je vypnutý');
+    return res.json({ translations: {} });
+  }
+
+  try {
+    const translations = await translateWords(words, context);
+    console.log(`[translate] ${words.length} slov (kontext="${context}") -> ${Object.keys(translations).length} preložených`);
+    res.json({ translations });
+  } catch (err) {
+    console.error('[translate] chyba:', err && err.stack ? err.stack : err);
+    res.status(500).json({ translations: {}, error: 'Preklad sa nepodarilo vygenerovať.' });
   }
 });
 

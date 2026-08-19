@@ -8,8 +8,10 @@ stránky priamo servované Apache-om (Node.js sám servíruje svoj frontend), al
 je to praktické miesto na uloženie appky vedľa `rozpravky` a tvojich
 existujúcich stránok.
 
-Appka nemá žiadne API kľúče ani perzistentné dáta (nič neukladá na server) -
-nasadenie je preto jednoduchšie ako pri appke rozpravky.
+Appka nemá žiadne perzistentné dáta (nič neukladá na server). Voliteľne
+používa `ANTHROPIC_API_KEY` (rovnaký kľúč ako appka rozpravky) na generovanie
+slovenských prekladov jednotlivých vynechaných slov v hre - bez neho appka
+funguje normálne, len bez týchto hintov.
 
 ## 1. Čo doinštalovať na Ubuntu (raz, pred prvým nasadením)
 
@@ -56,11 +58,24 @@ sudo bash deploy/install.sh
 ```
 
 Skript:
+- vytvorí `.env` (ak ešte neexistuje),
 - nastaví vlastníka súborov na `www-data`,
 - zaregistruje a spustí systemd službu `text_piesne` (počúva iba na
   `127.0.0.1:3001`, automaticky sa naštartuje aj po reštarte servera).
 
-## 4. Nastav Apache reverse proxy
+## 4. Doplň Anthropic API kľúč (voliteľné, pre slovenské hinty)
+
+```bash
+sudo nano /var/www/html/text_piesne/.env
+# doplň ANTHROPIC_API_KEY=sk-ant-... (rovnaký kľúč ako v /var/www/html/rozpravky/.env)
+sudo systemctl restart text_piesne
+```
+
+Bez tohto kroku appka funguje úplne normálne (vyhľadávanie, video, hra na
+doplňovanie slov), len sa pri vynechaných slovách nezobrazí malý slovenský
+prekladový hint.
+
+## 5. Nastav Apache reverse proxy
 
 Otvor svoje existujúce Apache vhost súbory (typicky
 `/etc/apache2/sites-enabled/000-default.conf` pre port 80 a príslušný
@@ -84,7 +99,7 @@ sudo apache2ctl configtest
 sudo systemctl restart apache2
 ```
 
-## 5. Over, že appka beží
+## 6. Over, že appka beží
 
 ```bash
 sudo systemctl status text_piesne

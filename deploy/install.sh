@@ -17,6 +17,21 @@ if ! command -v node >/dev/null 2>&1; then
 fi
 echo "Node.js verzia: $(node -v)"
 
+if [ ! -f "$APP_DIR/.env" ]; then
+  cp "$APP_DIR/.env.example" "$APP_DIR/.env"
+  echo ""
+  echo "Vytvoreny $APP_DIR/.env."
+  echo "DOPLN prosim ANTHROPIC_API_KEY do tohto suboru (rovnaky kluc ako pouzivas pre rozpravky):"
+  echo "  sudo nano $APP_DIR/.env"
+  echo "Bez neho appka funguje normalne, len bez slovenskych hintov pri hadani slov."
+  echo ""
+else
+  echo "$APP_DIR/.env uz existuje, nemenim ho."
+  if ! grep -q "^ANTHROPIC_API_KEY=.\+" "$APP_DIR/.env"; then
+    echo "UPOZORNENIE: ANTHROPIC_API_KEY v .env vyzera prazdny - hinty s prekladom slov nebudu fungovat, kym ho nedoplnis."
+  fi
+fi
+
 echo "Nastavujem vlastnika suborov na www-data..."
 chown -R www-data:www-data "$APP_DIR"
 
@@ -30,5 +45,6 @@ systemctl --no-pager status text_piesne || true
 
 echo ""
 echo "Hotovo. Dalsie kroky:"
-echo "1. Pridaj do svojho Apache vhostu riadky z $APP_DIR/deploy/apache-text_piesne.conf a restartuj apache: sudo systemctl restart apache2"
-echo "2. Otvor http://tvoj-server/text_piesne/ v prehliadaci."
+echo "1. Uisti sa, ze v $APP_DIR/.env je vyplneny ANTHROPIC_API_KEY (ak nebol, doplň ho a spusti: sudo systemctl restart text_piesne)"
+echo "2. Pridaj do svojho Apache vhostu riadky z $APP_DIR/deploy/apache-text_piesne.conf a restartuj apache: sudo systemctl restart apache2"
+echo "3. Otvor http://tvoj-server/text_piesne/ v prehliadaci."

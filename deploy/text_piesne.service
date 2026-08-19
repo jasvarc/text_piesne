@@ -6,8 +6,7 @@ After=network.target
 Type=simple
 WorkingDirectory=__APP_DIR__
 ExecStart=/usr/bin/node server/index.js
-Environment=PORT=3001
-Environment=HOST=127.0.0.1
+EnvironmentFile=-__APP_DIR__/.env
 Restart=on-failure
 RestartSec=3
 User=www-data

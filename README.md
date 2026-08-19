@@ -28,9 +28,29 @@ DONE:
   lyric webov (karaoketexty.cz, supermusic.cz) ako zdroj pre SK/CZ piesne, ale
   ich vlastne podmienky pouzitia/copyright poznamky explicitne priznavaju, ze
   nemaju prava obsah dalej sirit, takze sme sa rozhodli to nerobit
+- appka teraz zoberie prvych 5 YouTube vysledkov a skusa ich embedovat jeden po
+  druhom (YT.Player, cez youtube-nocookie.com, s origin parametrom kvoli chybe
+  150 na produkcnych domenach) - ak jeden zlyha (napr. embedovanie zakazane
+  vlastnikom), skusi sa dalsi, az kym jeden nefunguje alebo sa minu vsetky; vzdy
+  je viditelny aj zalozny odkaz "Otvor priamo na YouTube"
+- na UI je debug log panel (posledne akcie hladania/embedovania s casovou
+  znackou), aby sa dalo diagnostikovat na diaľku bez SSH na server; server tiez
+  loguje detailne (YouTube pocet vysledkov, lyrics.ovh status, atd.)
+- staticke .js/.css/.html subory maju Cache-Control: no-cache, aby sa po
+  nasadeni novej verzie nemuselo cakat na vyprsanie cache v prehliadaci
+- pri kazdom vynechanom slove v hre appka (volitelne, ak je nastaveny
+  ANTHROPIC_API_KEY) zobrazi maly slovensky prekladovy hint LEN pre to jedno
+  slovo/kratku frazu (napr. "💡 nádej") - NIE preklad celej piesne. Zvazovali
+  sme aj cely druhy stlpec s kompletnym prekladom textu, ale to by bola
+  systematicka plna reprodukcia (odvodene dielo) chraneneho textu pre
+  lubovolnu piesen, comu sme sa chceli vyhnut. Preklady jednotlivych slov su
+  cachovane v pamati servera (naprieč piesnami), aby sa rovnake slovo
+  neprekladalo cez API opakovane. Bez API kluca appka funguje normalne, len
+  bez tychto hintov
 
 TODO:
 1. presnejsie parovanie YouTube vysledku s hladanou pesnickou (yt-search niekedy
    vrati iny song od toho isteho interpreta)
-2. moznost vybrat si z viacerych YouTube vysledkov, nie len automaticky prvy
+2. moznost vybrat si z viacerych YouTube vysledkov rucne, nie len automaticky
+   postupne skusat prvych 5
 3. tazsie/lahsie urovne obtiaznosti (menej/viac vynechanych slov na strofu)

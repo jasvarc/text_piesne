@@ -1,3 +1,5 @@
+const APP_VERSION = 'origin-fix-1';
+
 const artistInput = document.getElementById('artist');
 const titleInput = document.getElementById('title');
 const findBtn = document.getElementById('find-btn');
@@ -245,10 +247,39 @@ function makeBlankWidget(answer, distractors) {
     wrap.appendChild(btn);
   });
 
-  return wrap;
+  const hintEl = document.createElement('span');
+  hintEl.className = 'word-hint hidden';
+  wrap.appendChild(hintEl);
+
+  return { wrap, hintEl };
 }
 
-function renderLyricsGame(lyrics) {
+async function loadHints(blankWidgets, songContext) {
+  const uniqueWords = Array.from(new Set(blankWidgets.map((b) => b.word)));
+  if (!uniqueWords.length) return;
+
+  try {
+    const res = await fetch('api/translate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ words: uniqueWords, context: songContext }),
+    });
+    const data = await res.json();
+    const translations = data.translations || {};
+
+    blankWidgets.forEach(({ word, hintEl }) => {
+      const t = translations[word];
+      if (t && hintEl.isConnected) {
+        hintEl.textContent = `💡 ${t}`;
+        hintEl.classList.remove('hidden');
+      }
+    });
+  } catch (err) {
+    // hra funguje aj bez hintov, tichy fallback
+  }
+}
+
+function renderLyricsGame(lyrics, songContext) {
   const { rawLines, blanks } = selectBlanks(lyrics);
 
   if (!blanks.length) {
@@ -265,6 +296,7 @@ function renderLyricsGame(lyrics) {
   blanks.forEach((b) => blanksByLine.set(b.lineIndex, b));
 
   const pool = buildDistractorPool(lyrics);
+  const blankWidgets = [];
 
   lyricsText.innerHTML = '';
   rawLines.forEach((line, idx) => {
@@ -277,7 +309,9 @@ function renderLyricsGame(lyrics) {
     if (blank) {
       lineDiv.appendChild(document.createTextNode(line.slice(0, blank.start)));
       const distractors = pickDistractors(pool, blank.word, 2);
-      lineDiv.appendChild(makeBlankWidget(blank.word, distractors));
+      const { wrap, hintEl } = makeBlankWidget(blank.word, distractors);
+      blankWidgets.push({ word: blank.word, hintEl });
+      lineDiv.appendChild(wrap);
       lineDiv.appendChild(document.createTextNode(line.slice(blank.end)));
     } else {
       lineDiv.textContent = line;
@@ -290,6 +324,8 @@ function renderLyricsGame(lyrics) {
   lyricsMissing.classList.add('hidden');
   gameProgress.classList.remove('hidden');
   updateProgress();
+
+  loadHints(blankWidgets, songContext);
 }
 
 async function findSong() {
@@ -331,7 +367,8 @@ async function findSong() {
 
     gameComplete.classList.add('hidden');
     if (data.lyrics) {
-      renderLyricsGame(data.lyrics);
+      const songContext = videos[0].title || `${artist} ${title}`.trim();
+      renderLyricsGame(data.lyrics, songContext);
     } else {
       lyricsText.textContent = '';
       gameProgress.classList.add('hidden');

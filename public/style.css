@@ -220,3 +220,11 @@ button:hover {
   color: var(--success);
   font-weight: bold;
 }
+
+.word-hint {
+  margin-left: 4px;
+  font-size: 0.8rem;
+  color: var(--muted);
+  font-style: italic;
+  white-space: nowrap;
+}
