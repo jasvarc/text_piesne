@@ -41,9 +41,9 @@ async function translateWords(words, context) {
     ],
   });
 
-  const block = message.content[0];
-  const raw = block && block.type === 'text' ? block.text : '';
-  console.log(`[translate] Claude stop_reason=${message.stop_reason}, surová odpoveď (prvých 400 znakov): ${raw.slice(0, 400)}`);
+  const block = message.content.find((b) => b.type === 'text');
+  const raw = block ? block.text : '';
+  console.log(`[translate] Claude stop_reason=${message.stop_reason}, content bloky=${message.content.map((b) => b.type).join(',')}, surová odpoveď (prvých 400 znakov): ${raw.slice(0, 400)}`);
 
   let arr;
   try {
