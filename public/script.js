@@ -249,7 +249,6 @@ function makeBlankWidget(answer, distractors) {
 
   const hintEl = document.createElement('span');
   hintEl.className = 'word-hint hidden';
-  wrap.appendChild(hintEl);
 
   return { wrap, hintEl };
 }
@@ -310,10 +309,16 @@ function renderLyricsGame(lyrics, songContext) {
   lyricsText.innerHTML = '';
   rawLines.forEach((line, idx) => {
     if (line.trim() === '') {
-      lyricsText.appendChild(document.createElement('br'));
+      const spacer = document.createElement('div');
+      spacer.className = 'lyrics-row-spacer';
+      lyricsText.appendChild(spacer);
       return;
     }
     const lineDiv = document.createElement('div');
+    lineDiv.className = 'lyrics-line';
+    const hintCell = document.createElement('div');
+    hintCell.className = 'hint-cell';
+
     const blank = blanksByLine.get(idx);
     if (blank) {
       lineDiv.appendChild(document.createTextNode(line.slice(0, blank.start)));
@@ -322,10 +327,12 @@ function renderLyricsGame(lyrics, songContext) {
       blankWidgets.push({ word: blank.word, hintEl });
       lineDiv.appendChild(wrap);
       lineDiv.appendChild(document.createTextNode(line.slice(blank.end)));
+      hintCell.appendChild(hintEl);
     } else {
       lineDiv.textContent = line;
     }
     lyricsText.appendChild(lineDiv);
+    lyricsText.appendChild(hintCell);
   });
 
   totalBlanks = blanks.length;

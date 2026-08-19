@@ -158,15 +158,39 @@ button:hover {
 }
 
 #lyrics-text {
-  line-height: 2.2;
+  display: grid;
+  grid-template-columns: 1fr minmax(90px, auto);
+  column-gap: 20px;
+  row-gap: 6px;
+  align-items: baseline;
+  line-height: 1.8;
   background: #16172a;
   border-radius: 8px;
   padding: 16px;
   margin-bottom: 8px;
 }
 
-#lyrics-text div {
+.lyrics-line {
   min-height: 1.4em;
+}
+
+.hint-cell {
+  min-height: 1.4em;
+}
+
+.lyrics-row-spacer {
+  grid-column: 1 / -1;
+  height: 10px;
+}
+
+@media (max-width: 480px) {
+  #lyrics-text {
+    grid-template-columns: 1fr;
+  }
+
+  .hint-cell {
+    margin-bottom: 4px;
+  }
 }
 
 #game-progress {
@@ -222,9 +246,7 @@ button:hover {
 }
 
 .word-hint {
-  margin-left: 4px;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   color: var(--muted);
   font-style: italic;
-  white-space: nowrap;
 }
