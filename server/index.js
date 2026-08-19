@@ -99,7 +99,7 @@ app.post('/api/translate', async (req, res) => {
     res.json({ translations });
   } catch (err) {
     console.error('[translate] chyba:', err && err.stack ? err.stack : err);
-    res.status(500).json({ translations: {}, error: 'Preklad sa nepodarilo vygenerovať.' });
+    res.status(500).json({ translations: {}, error: err.message || 'Preklad sa nepodarilo vygenerovať.' });
   }
 });
 

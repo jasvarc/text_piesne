@@ -42,7 +42,8 @@ async function translateWords(words, context) {
   });
 
   const block = message.content[0];
-  const raw = block && block.type === 'text' ? block.text : '[]';
+  const raw = block && block.type === 'text' ? block.text : '';
+  console.log(`[translate] Claude stop_reason=${message.stop_reason}, surová odpoveď (prvých 400 znakov): ${raw.slice(0, 400)}`);
 
   let arr;
   try {
@@ -52,14 +53,20 @@ async function translateWords(words, context) {
     arr = match ? JSON.parse(match[0]) : [];
   }
 
+  let newlyTranslated = 0;
   toTranslate.forEach((w, i) => {
     const t = Array.isArray(arr) ? arr[i] : undefined;
     if (typeof t === 'string' && t.trim()) {
       const clean = t.trim();
       cache.set(w.toLowerCase(), clean);
       result[w] = clean;
+      newlyTranslated += 1;
     }
   });
+
+  if (newlyTranslated === 0) {
+    throw new Error(`Claude nevrátil použiteľné JSON pole prekladov (stop_reason=${message.stop_reason}). Surová odpoveď: ${raw.slice(0, 300) || '(prázdna)'}`);
+  }
 
   return result;
 }
